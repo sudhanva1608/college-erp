@@ -88,11 +88,11 @@ export const StudentAnnouncements: React.FC = () => {
                   <h3 className="mb-1 text-lg font-semibold text-gray-900">{announcement.title}</h3>
                   <p className="text-gray-700 text-sm leading-relaxed mb-2">{announcement.body}</p>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                    <span>
-                      <CalendarDays size={14} className="mr-1" /> {announcement.date}
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarDays size={13} /> {announcement.date}
                     </span>
-                    <span>
-                      <User size={14} className="mr-1" /> {announcement.author}
+                    <span className="inline-flex items-center gap-1">
+                      <User size={13} /> {announcement.author}
                     </span>
                   </div>
                 </div>
