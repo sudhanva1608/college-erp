@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { User, Role } from '../types';
 import { BookOpen, GraduationCap, Users, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import API from '../services/api';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -33,28 +34,27 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, defaultRole }) => {
     },
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const demo = DEMO_ACCOUNTS[role];
-      if (userId === demo.id && password === demo.password) {
-        const loggedInUser = {
-          role,
-          name: demo.name,
-          id: demo.id,
-          department: demo.department,
-        };
-        onLogin(loggedInUser);
-        navigate(`/${role}/dashboard`, { replace: true });
-      } else {
-        setError('Invalid credentials. Try the demo account below.');
-      }
+    try {
+      const response = await API.post('/auth/login', {
+        id: userId,
+        password,
+        role,
+      });
+      const { token, user: loggedInUser } = response.data;
+      localStorage.setItem('token', token);
+      onLogin(loggedInUser);
+      navigate(`/${role}/dashboard`, { replace: true });
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.response?.data?.error || 'Invalid credentials. Try the demo account below.');
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   const fillDemo = () => {
