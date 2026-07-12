@@ -11,8 +11,18 @@ export const validate = (schema: ZodSchema<any>) => {
       });
       // Replace request with parsed typed data
       req.body = parsed.body || req.body;
-      req.query = parsed.query || req.query;
-      req.params = parsed.params || req.params;
+      if (parsed.query) {
+        for (const key of Object.keys(req.query)) {
+          delete req.query[key];
+        }
+        Object.assign(req.query, parsed.query);
+      }
+      if (parsed.params) {
+        for (const key of Object.keys(req.params)) {
+          delete req.params[key];
+        }
+        Object.assign(req.params, parsed.params);
+      }
       next();
     } catch (error) {
       if (error instanceof ZodError) {
@@ -24,6 +34,7 @@ export const validate = (schema: ZodSchema<any>) => {
           })),
         });
       }
+      console.error('Unexpected validation error:', error);
       return res.status(500).json({ error: 'Internal server error during validation' });
     }
   };
