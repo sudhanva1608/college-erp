@@ -6,6 +6,9 @@ import routes from './routes';
 
 const app = express();
 
+// Trust proxy headers (required for dev tunnels and cloud hosting rate limiters)
+app.set('trust proxy', 1);
+
 // Standard Security Headers
 app.use(helmet({
   crossOriginResourcePolicy: false, // Allow static media assets to be loaded by frontend
