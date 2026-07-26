@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "db:start": "docker compose -f database/docker-compose.yml up -d",
+    "db:start": "docker compose -f database/docker-compose.yml up -d && echo \"Waiting for database...\" && until docker exec college-erp-postgres pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done && (cd backend && npx prisma migrate resolve --applied 20260712000000_add_semester || true)",
     "db:stop": "docker compose -f database/docker-compose.yml down",
     "db:push": "cd backend && npm run prisma:generate && npx prisma db push",
     "db:seed": "cd backend && npx tsc prisma/seed.ts --ignoreConfig --esModuleInterop --module commonjs --target es2020 --outDir prisma/dist --skipLibCheck --types node && node prisma/dist/seed.js",
