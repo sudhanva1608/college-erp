@@ -83,7 +83,7 @@ async function main() {
     { code: 'CS2302', name: 'Operating Systems', facultyId: 'FAC2019', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
     { code: 'CS2303', name: 'Computer Networks', facultyId: 'FAC2020', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
     { code: 'CS2304', name: 'Database Systems', facultyId: 'FAC2021', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
-    { code: 'CS2305', name: 'Software Engineering', facultyId: 'FAC2022', classGroup: 'CSE-B', type: SubjectType.THEORY },
+    { code: 'CS2305', name: 'Software Engineering', facultyId: 'FAC2022', classGroup: 'CSE-B', type: SubjectType.STANDALONE },
     // Labs
     { code: 'CS2301L', name: 'DS Lab', facultyId: 'FAC2018', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
     { code: 'CS2302L', name: 'OS Lab', facultyId: 'FAC2019', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
@@ -223,7 +223,7 @@ async function main() {
       if (!sub) continue;
 
       let assessments: { type: string; max: number }[] = [];
-      if (sub.type === SubjectType.THEORY) {
+      if (sub.type === SubjectType.STANDALONE) {
         assessments = [
           { type: 'cie1', max: 50 },
           { type: 'cie2', max: 50 },

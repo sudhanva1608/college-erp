@@ -50,15 +50,15 @@ export const getStudentMarks = async (req: AuthRequest, res: Response) => {
         const best = scores.slice(0, 2);
         const avg = best.reduce((sum, val) => sum + val, 0) / best.length;
 
-        // Scale based on subject type (Theory to 25, Integrated to 15)
-        const scaleFactor = sub.type === 'THEORY' ? 0.5 : 0.3;
+        // Scale based on subject type (Standalone to 25, Integrated to 15)
+        const scaleFactor = sub.type === 'STANDALONE' ? 0.5 : 0.3;
         const scaled = avg * scaleFactor;
         return Math.round(scaled * 10) / 10;
       };
 
       // Helper to calculate assignment score
       const getAssignmentScore = () => {
-        if (sub.type === 'THEORY') {
+        if (sub.type === 'STANDALONE') {
           const a = sub.marks.find((m) => m.type === 'assignment')?.score;
           return a !== undefined ? a : null;
         } else {
@@ -74,7 +74,7 @@ export const getStudentMarks = async (req: AuthRequest, res: Response) => {
       };
 
       const getLabScore = () => {
-        if (sub.type === 'THEORY') return null;
+        if (sub.type === 'STANDALONE') return null;
         const l = sub.marks.find((m) => m.type === 'lab')?.score;
         return l !== undefined ? l : null;
       };
@@ -83,7 +83,7 @@ export const getStudentMarks = async (req: AuthRequest, res: Response) => {
       const assignmentScore = getAssignmentScore();
       const labScore = getLabScore();
 
-      const isTheory = sub.type === 'THEORY';
+      const isStandalone = sub.type === 'STANDALONE';
 
       return {
         name: sub.name,
@@ -91,9 +91,9 @@ export const getStudentMarks = async (req: AuthRequest, res: Response) => {
         faculty: sub.faculty.name,
         type: sub.type,
         assessments: [
-          { name: 'CIE', marks: cieScore, max: isTheory ? 25 : 15 },
-          { name: 'Assignment', marks: assignmentScore, max: isTheory ? 25 : 10 },
-          { name: 'Lab', marks: labScore, max: isTheory ? 0 : 25 }
+          { name: 'CIE', marks: cieScore, max: isStandalone ? 25 : 15 },
+          { name: 'Assignment', marks: assignmentScore, max: isStandalone ? 25 : 10 },
+          { name: 'Lab', marks: labScore, max: isStandalone ? 0 : 25 }
         ],
       };
     });

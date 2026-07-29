@@ -13,7 +13,7 @@ export const SubjectManagement: React.FC = () => {
     name: '',
     facultyId: '',
     classGroup: '',
-    type: 'THEORY'
+    type: 'STANDALONE'
   });
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export const SubjectManagement: React.FC = () => {
         name: '',
         facultyId: '',
         classGroup: '',
-        type: 'THEORY'
+        type: 'STANDALONE'
       });
       setTimeout(() => {
         setSaveMessage(null);
@@ -86,7 +86,7 @@ export const SubjectManagement: React.FC = () => {
             <Plus size={18} className="text-blue-600" />
             Add New Subject
           </h2>
-          <p className="text-xs text-gray-500 mb-6">Create a subject and define its evaluation schema (Theory vs Lab Integrated).</p>
+          <p className="text-xs text-gray-500 mb-6">Create a subject and define its evaluation schema (Standalone vs Integrated).</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -132,8 +132,8 @@ export const SubjectManagement: React.FC = () => {
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-gray-50 focus:bg-white transition-colors"
               >
-                <option value="THEORY">Theory (3 CIEs: Best 2 averaged to 25 + 25 Assignment)</option>
-                <option value="INTEGRATED">Theory + Lab (15 CIE + 10 Assignment + 25 Lab)</option>
+                <option value="STANDALONE">Standalone (CIE: Best 2 of 3 scaled to 25 + 25 Assignment)</option>
+                <option value="INTEGRATED">Integrated (CIE: Best 2 of 3 scaled to 15 + 10 Assignment + 25 Lab)</option>
               </select>
             </div>
 
@@ -212,7 +212,7 @@ export const SubjectManagement: React.FC = () => {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                           sub.type === 'INTEGRATED' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
                         }`}>
-                          {sub.type === 'INTEGRATED' ? 'Theory + Lab' : 'Theory Only'}
+                          {sub.type === 'INTEGRATED' ? 'Integrated' : 'Standalone'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">

@@ -21,7 +21,7 @@ enum SemesterStatus {
 }
 
 enum SubjectType {
-  THEORY
+  STANDALONE
   INTEGRATED
 }
 
@@ -49,7 +49,7 @@ model Subject {
   name        String
   facultyId   String
   classGroup  String // Target class (e.g., "CSE-B")
-  type        SubjectType @default(THEORY)
+  type        SubjectType @default(STANDALONE)
 
   faculty User @relation("TeacherSubjects", fields: [facultyId], references: [id])
 

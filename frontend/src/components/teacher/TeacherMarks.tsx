@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, CheckCircle2, ChevronDown } from 'lucide-react';
 import API from '../../services/api';
 
-const THEORY_ASSESSMENTS = [
+const STANDALONE_ASSESSMENTS = [
   { id: 'cie1', label: 'CIE-1', max: 50 },
   { id: 'cie2', label: 'CIE-2', max: 50 },
   { id: 'cie3', label: 'CIE-3', max: 50 },
@@ -82,7 +82,7 @@ export const TeacherMarks: React.FC = () => {
   const currentSubject = subjects.find(s => s.code === selectedClass);
   const activeAssessments = currentSubject?.type === 'INTEGRATED'
     ? INTEGRATED_ASSESSMENTS
-    : THEORY_ASSESSMENTS;
+    : STANDALONE_ASSESSMENTS;
 
   // Reset selected assessment if it is not valid for the current subject type
   useEffect(() => {
