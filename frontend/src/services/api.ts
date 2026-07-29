@@ -1,21 +1,9 @@
 import axios from 'axios';
 
-const getBaseURL = () => {
-  const envUrl = (import.meta as any).env?.VITE_API_URL;
-  if (envUrl) {
-    return envUrl;
-  }
-  const host = window.location.hostname;
-  if (host.includes('devtunnels.ms') || host.includes('gitpod.io') || host.includes('github.dev')) {
-    const protocol = window.location.protocol;
-    const tunnelBackendHost = host.replace('-5173', '-5001');
-    return `${protocol}//${tunnelBackendHost}/api`;
-  }
-  return 'http://localhost:5001/api';
-};
-
 const API = axios.create({
-  baseURL: getBaseURL(),
+  // Use relative /api — Vite dev proxy forwards to backend:5001
+  // Works regardless of hostname (localhost, LAN IP, dev tunnel, etc.)
+  baseURL: '/api',
 });
 
 // Add a request interceptor to attach the JWT token to all API calls
