@@ -1,4 +1,4 @@
-import { PrismaClient, Role, SemesterStatus } from '@prisma/client';
+import { PrismaClient, Role, SemesterStatus, SubjectType } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -79,15 +79,15 @@ async function main() {
 
   // 3. Seed Subjects
   const subjects = [
-    { code: 'CS2301', name: 'Data Structures & Algorithms', facultyId: 'FAC2018', classGroup: 'CSE-B' },
-    { code: 'CS2302', name: 'Operating Systems', facultyId: 'FAC2019', classGroup: 'CSE-B' },
-    { code: 'CS2303', name: 'Computer Networks', facultyId: 'FAC2020', classGroup: 'CSE-B' },
-    { code: 'CS2304', name: 'Database Systems', facultyId: 'FAC2021', classGroup: 'CSE-B' },
-    { code: 'CS2305', name: 'Software Engineering', facultyId: 'FAC2022', classGroup: 'CSE-B' },
+    { code: 'CS2301', name: 'Data Structures & Algorithms', facultyId: 'FAC2018', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
+    { code: 'CS2302', name: 'Operating Systems', facultyId: 'FAC2019', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
+    { code: 'CS2303', name: 'Computer Networks', facultyId: 'FAC2020', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
+    { code: 'CS2304', name: 'Database Systems', facultyId: 'FAC2021', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
+    { code: 'CS2305', name: 'Software Engineering', facultyId: 'FAC2022', classGroup: 'CSE-B', type: SubjectType.THEORY },
     // Labs
-    { code: 'CS2301L', name: 'DS Lab', facultyId: 'FAC2018', classGroup: 'CSE-B' },
-    { code: 'CS2302L', name: 'OS Lab', facultyId: 'FAC2019', classGroup: 'CSE-B' },
-    { code: 'CS2303L', name: 'Networks Lab', facultyId: 'FAC2020', classGroup: 'CSE-B' },
+    { code: 'CS2301L', name: 'DS Lab', facultyId: 'FAC2018', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
+    { code: 'CS2302L', name: 'OS Lab', facultyId: 'FAC2019', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
+    { code: 'CS2303L', name: 'Networks Lab', facultyId: 'FAC2020', classGroup: 'CSE-B', type: SubjectType.INTEGRATED },
   ];
 
   for (const sub of subjects) {
@@ -214,21 +214,47 @@ async function main() {
 
   // 7. Seed mock Marks for the demo students
   const activeStudents = ['CS21B042', 'CS21B001', 'CS21B002', 'CS21B003', 'CS21B004', 'CS21B005'];
-  const testSubjects = ['CS2301', 'CS2302', 'CS2303', 'CS2304', 'CS2305'];
-  const assessmentTypes = [
-    { type: 'ia1', max: 30 },
-    { type: 'ia2', max: 30 },
-    { type: 'assignment', max: 10 },
-    { type: 'lab', max: 25 },
-  ];
+  const testSubjects = ['CS2301', 'CS2302', 'CS2303', 'CS2304', 'CS2305', 'CS2301L', 'CS2302L', 'CS2303L'];
 
   for (const sId of activeStudents) {
     for (const subCode of testSubjects) {
-      for (const ass of assessmentTypes) {
+      // Find seeded subject type
+      const sub = subjects.find(s => s.code === subCode);
+      if (!sub) continue;
+
+      let assessments: { type: string; max: number }[] = [];
+      if (sub.type === SubjectType.THEORY) {
+        assessments = [
+          { type: 'cie1', max: 50 },
+          { type: 'cie2', max: 50 },
+          { type: 'cie3', max: 50 },
+          { type: 'assignment', max: 25 },
+        ];
+      } else {
+        assessments = [
+          { type: 'cie1', max: 50 },
+          { type: 'cie2', max: 50 },
+          { type: 'cie3', max: 50 },
+          { type: 'assignment1', max: 10 },
+          { type: 'assignment2', max: 10 },
+          { type: 'lab', max: 25 },
+        ];
+      }
+
+      for (const ass of assessments) {
         // Generate a random score or set some fixed mock score
         let score: number | null = Math.floor(Math.random() * (ass.max - ass.max * 0.5) + ass.max * 0.5);
-        if (sId === 'CS21B042' && subCode === 'CS2305' && ass.type === 'ia2') {
-          score = null; // Pending mark for SE IA2 for Rehman Dakait
+        
+        // Let's create some pending marks for the demo student Rehman Dakait (CS21B042)
+        if (sId === 'CS21B042') {
+          // Software Engineering (CS2305 - Theory) is missing cie3
+          if (subCode === 'CS2305' && ass.type === 'cie3') {
+            score = null;
+          }
+          // Labs CS2301L, CS2302L, CS2303L have all pending marks
+          if (subCode.endsWith('L')) {
+            score = null;
+          }
         }
 
         await prisma.mark.upsert({
@@ -240,7 +266,9 @@ async function main() {
               semesterId: defaultSemester.id,
             },
           },
-          update: {},
+          update: {
+            maxScore: ass.max,
+          },
           create: {
             studentId: sId,
             subjectCode: subCode,

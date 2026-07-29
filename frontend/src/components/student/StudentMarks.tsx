@@ -53,12 +53,14 @@ export const StudentMarks: React.FC = () => {
     let subPending = false;
 
     sub.assessments.forEach((ass: any) => {
-      if (ass.marks !== null) {
-        subScored += ass.marks;
-        subMax += ass.max;
-      } else {
-        subPending = true;
-        hasPendingMarks = true;
+      if (ass.max > 0) {
+        if (ass.marks !== null) {
+          subScored += ass.marks;
+          subMax += ass.max;
+        } else {
+          subPending = true;
+          hasPendingMarks = true;
+        }
       }
     });
 
@@ -113,15 +115,15 @@ export const StudentMarks: React.FC = () => {
             <thead>
               <tr className="bg-gray-50">
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject</th>
-                {['IA-1 (30)', 'IA-2 (30)', 'Assignment (10)', 'Lab (25)', 'Total', 'Grade'].map(h => (
+                {['CIE', 'Assignment', 'Lab', 'Total (50)', 'Grade'].map(h => (
                   <th key={h} className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {subjects.map((s) => {
-                const scored = s.assessments.reduce((acc: number, a: any) => acc + (a.marks ?? 0), 0);
-                const maxScored = s.assessments.reduce((acc: number, a: any) => acc + (a.marks !== null ? a.max : 0), 0);
+                const scored = s.assessments.reduce((acc: number, a: any) => acc + (a.max > 0 ? (a.marks ?? 0) : 0), 0);
+                const maxScored = s.assessments.reduce((acc: number, a: any) => acc + (a.max > 0 && a.marks !== null ? a.max : 0), 0);
                 const fullMax = s.assessments.reduce((acc: number, a: any) => acc + a.max, 0);
                 const pct = maxScored > 0 ? Math.round((scored / maxScored) * 100) : 0;
                 const g = grade(pct);
@@ -134,7 +136,9 @@ export const StudentMarks: React.FC = () => {
                     </td>
                     {s.assessments.map((a: any) => (
                       <td key={a.name} className="px-4 py-4 text-center">
-                        {a.marks !== null ? (
+                        {a.max === 0 ? (
+                          <span className="text-gray-400">—</span>
+                        ) : a.marks !== null ? (
                           <span className={`font-semibold ${a.marks / a.max >= 0.8 ? 'text-green-700' : a.marks / a.max >= 0.6 ? 'text-amber-700' : 'text-red-700'}`}>
                             {a.marks}
                           </span>

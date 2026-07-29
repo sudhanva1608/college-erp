@@ -6,6 +6,7 @@ import announcementRoutes from './announcement.routes';
 import timetableRoutes from './timetable.routes';
 import noteRoutes from './note.routes';
 import semesterRoutes from './semester.routes';
+import subjectRoutes from './subject.routes';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/announcements', announcementRoutes);
 router.use('/timetable', timetableRoutes);
 router.use('/notes', noteRoutes);
 router.use('/semesters', semesterRoutes);
+router.use('/subjects', subjectRoutes);
 
 export default router;
