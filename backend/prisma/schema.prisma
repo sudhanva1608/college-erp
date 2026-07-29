@@ -20,6 +20,11 @@ enum SemesterStatus {
   ARCHIVED
 }
 
+enum SubjectType {
+  STANDALONE
+  INTEGRATED
+}
+
 model User {
   id          String   @id // Roll Number (e.g. CS21B042) or Faculty ID (e.g. FAC2018)
   name        String
@@ -44,6 +49,7 @@ model Subject {
   name        String
   facultyId   String
   classGroup  String // Target class (e.g., "CSE-B")
+  type        SubjectType @default(STANDALONE)
 
   faculty User @relation("TeacherSubjects", fields: [facultyId], references: [id])
 

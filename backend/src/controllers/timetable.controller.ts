@@ -188,6 +188,7 @@ export const getTeacherSubjects = async (req: AuthRequest, res: Response) => {
             code: true,
             name: true,
             classGroup: true,
+            type: true,
           },
         },
       },
@@ -205,6 +206,7 @@ export const getTeacherSubjects = async (req: AuthRequest, res: Response) => {
             code: slot.subject.code,
             name: slot.subject.name,
             classGroup: slot.subject.classGroup,
+            type: slot.subject.type,
           });
         }
       }

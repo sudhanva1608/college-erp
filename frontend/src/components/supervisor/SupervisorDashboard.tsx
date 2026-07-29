@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  LayoutDashboard, CalendarRange, Users, ClipboardList, Menu, X, Shield
+  LayoutDashboard, CalendarRange, Users, ClipboardList, Menu, X, Shield, BookOpen
 } from 'lucide-react';
 import type { User } from '../../types';
 import { Sidebar } from '../Sidebar';
@@ -8,10 +8,12 @@ import { SupervisorHome } from './SupervisorHome';
 import { SemesterManagement } from './SemesterManagement';
 import { FacultyManagement } from './FacultyManagement';
 import { TimetableManagement } from './TimetableManagement';
+import { SubjectManagement } from './SubjectManagement';
 
 const NAV_ITEMS = [
   { id: 'home', label: 'Overview', icon: <LayoutDashboard size={16} /> },
   { id: 'semesters', label: 'Semesters', icon: <CalendarRange size={16} /> },
+  { id: 'subjects', label: 'Subjects', icon: <BookOpen size={16} /> },
   { id: 'faculty', label: 'Faculty & Access', icon: <Users size={16} /> },
   { id: 'timetable', label: 'Timetables', icon: <ClipboardList size={16} /> },
 ];
@@ -29,6 +31,7 @@ export const SupervisorDashboard: React.FC<Props> = ({ user, onLogout }) => {
     switch (active) {
       case 'home': return <SupervisorHome user={user} onNavigate={setActive} />;
       case 'semesters': return <SemesterManagement />;
+      case 'subjects': return <SubjectManagement />;
       case 'faculty': return <FacultyManagement />;
       case 'timetable': return <TimetableManagement />;
       default: return null;

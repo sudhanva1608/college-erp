@@ -36,20 +36,64 @@ export const getStudentMarks = async (req: AuthRequest, res: Response) => {
 
     // Map into the format expected by StudentMarks.tsx
     const marksData = subjects.map((sub) => {
-      const ia1 = sub.marks.find((m) => m.type === 'ia1');
-      const ia2 = sub.marks.find((m) => m.type === 'ia2');
-      const assignment = sub.marks.find((m) => m.type === 'assignment');
-      const lab = sub.marks.find((m) => m.type === 'lab');
+      // Helper to calculate best 2 average of CIEs and scale
+      const getCieScore = () => {
+        const c1 = sub.marks.find((m) => m.type === 'cie1')?.score;
+        const c2 = sub.marks.find((m) => m.type === 'cie2')?.score;
+        const c3 = sub.marks.find((m) => m.type === 'cie3')?.score;
+
+        const scores = [c1, c2, c3].filter((s): s is number => s !== undefined && s !== null);
+        if (scores.length === 0) return null;
+
+        // Best 2 average
+        scores.sort((a, b) => b - a);
+        const best = scores.slice(0, 2);
+        const avg = best.reduce((sum, val) => sum + val, 0) / best.length;
+
+        // Scale based on subject type (Standalone to 25, Integrated to 15)
+        const scaleFactor = sub.type === 'STANDALONE' ? 0.5 : 0.3;
+        const scaled = avg * scaleFactor;
+        return Math.round(scaled * 10) / 10;
+      };
+
+      // Helper to calculate assignment score
+      const getAssignmentScore = () => {
+        if (sub.type === 'STANDALONE') {
+          const a = sub.marks.find((m) => m.type === 'assignment')?.score;
+          return a !== undefined ? a : null;
+        } else {
+          // Integrated: average of assignment1 and assignment2
+          const a1 = sub.marks.find((m) => m.type === 'assignment1')?.score;
+          const a2 = sub.marks.find((m) => m.type === 'assignment2')?.score;
+          
+          const scores = [a1, a2].filter((s): s is number => s !== undefined && s !== null);
+          if (scores.length === 0) return null;
+          const avg = scores.reduce((sum, val) => sum + val, 0) / scores.length;
+          return Math.round(avg * 10) / 10;
+        }
+      };
+
+      const getLabScore = () => {
+        if (sub.type === 'STANDALONE') return null;
+        const l = sub.marks.find((m) => m.type === 'lab')?.score;
+        return l !== undefined ? l : null;
+      };
+
+      const cieScore = getCieScore();
+      const assignmentScore = getAssignmentScore();
+      const labScore = getLabScore();
+
+      const isStandalone = sub.type === 'STANDALONE';
 
       return {
         name: sub.name,
         code: sub.code,
         faculty: sub.faculty.name,
+        type: sub.type,
         assessments: [
-          { name: 'IA-1', marks: ia1 ? ia1.score : null, max: ia1 ? ia1.maxScore : 30 },
-          { name: 'IA-2', marks: ia2 ? ia2.score : null, max: ia2 ? ia2.maxScore : 30 },
-          { name: 'Assignment', marks: assignment ? assignment.score : null, max: assignment ? assignment.maxScore : 10 },
-          { name: 'Lab', marks: lab ? lab.score : null, max: lab ? lab.maxScore : 25 },
+          { name: 'CIE', marks: cieScore, max: isStandalone ? 25 : 15 },
+          { name: 'Assignment', marks: assignmentScore, max: isStandalone ? 25 : 10 },
+          { name: 'Lab', marks: labScore, max: isStandalone ? 0 : 25 }
         ],
       };
     });

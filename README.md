@@ -48,7 +48,9 @@ college-erp/
 Setting up a new development environment is straightforward:
 
 1. **Install Dependencies**: Run `npm install` inside the `backend` and `frontend` directories to download the packages.
-2. **Configure Environment Variables**: Copy `backend/.env.example` to `backend/.env`. The included local configuration connects to the Docker database at `localhost:5432`.
+2. **Configure Environment Variables**: 
+   - Copy `backend/.env.example` to `backend/.env`. The default local configuration connects to the Docker database at `localhost:5432`.
+   - **Note for Windows users (or if port 5432 is in use)**: If you already run a local PostgreSQL instance on your machine, copy the root `.env.example` to `.env` in the repository root and change `DB_PORT=5433`. The startup script will automatically configure Docker and update your `backend/.env` connection URL on run.
 3. **Database Setup**: With Docker Desktop running, run `npm run db:setup` from the repository root. This starts PostgreSQL, generates the Prisma client, creates the database schema, and seeds mock data.
 4. **State Persistence**: The database container maps a volume on your machine. This means records are preserved when you stop the services.
 

@@ -2,10 +2,19 @@ import { useState, useEffect } from 'react';
 import { Save, CheckCircle2, ChevronDown } from 'lucide-react';
 import API from '../../services/api';
 
-const ASSESSMENTS = [
-  { id: 'ia1', label: 'IA-1', max: 30 },
-  { id: 'ia2', label: 'IA-2', max: 30 },
-  { id: 'assignment', label: 'Assignment', max: 10 },
+const STANDALONE_ASSESSMENTS = [
+  { id: 'cie1', label: 'CIE-1', max: 50 },
+  { id: 'cie2', label: 'CIE-2', max: 50 },
+  { id: 'cie3', label: 'CIE-3', max: 50 },
+  { id: 'assignment', label: 'Assignment', max: 25 },
+];
+
+const INTEGRATED_ASSESSMENTS = [
+  { id: 'cie1', label: 'CIE-1', max: 50 },
+  { id: 'cie2', label: 'CIE-2', max: 50 },
+  { id: 'cie3', label: 'CIE-3', max: 50 },
+  { id: 'assignment1', label: 'Assignment 1', max: 10 },
+  { id: 'assignment2', label: 'Assignment 2', max: 10 },
   { id: 'lab', label: 'Lab', max: 25 },
 ];
 
@@ -26,7 +35,7 @@ interface StudentMarkItem {
 export const TeacherMarks: React.FC = () => {
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [selectedClass, setSelectedClass] = useState('');
-  const [selectedAssessment, setSelectedAssessment] = useState(ASSESSMENTS[0].id);
+  const [selectedAssessment, setSelectedAssessment] = useState('cie1');
   const [students, setStudents] = useState<StudentMarkItem[]>([]);
   const [marks, setMarks] = useState<MarksMap>({});
   const [saved, setSaved] = useState(false);
@@ -70,7 +79,19 @@ export const TeacherMarks: React.FC = () => {
     fetchMarksRoster();
   }, [selectedClass, selectedAssessment]);
 
-  const assessment = ASSESSMENTS.find(a => a.id === selectedAssessment)!;
+  const currentSubject = subjects.find(s => s.code === selectedClass);
+  const activeAssessments = currentSubject?.type === 'INTEGRATED'
+    ? INTEGRATED_ASSESSMENTS
+    : STANDALONE_ASSESSMENTS;
+
+  // Reset selected assessment if it is not valid for the current subject type
+  useEffect(() => {
+    if (activeAssessments.length > 0 && !activeAssessments.some(a => a.id === selectedAssessment)) {
+      setSelectedAssessment(activeAssessments[0].id);
+    }
+  }, [selectedClass, activeAssessments, selectedAssessment]);
+
+  const assessment = activeAssessments.find(a => a.id === selectedAssessment) || activeAssessments[0];
 
   const updateMark = (roll: string, value: string) => {
     const num = parseInt(value);
@@ -140,7 +161,7 @@ export const TeacherMarks: React.FC = () => {
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Assessment</label>
             <div className="flex gap-2 flex-wrap">
-              {ASSESSMENTS.map(a => (
+              {activeAssessments.map(a => (
                 <button
                   key={a.id}
                   onClick={() => { setSelectedAssessment(a.id); setSaved(false) }}
