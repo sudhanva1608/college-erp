@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Save, CheckCircle2, ChevronDown, Upload } from 'lucide-react';
 import API from '../../services/api';
+import * as XLSX from 'xlsx';
 
 const STANDALONE_ASSESSMENTS = [
   { id: 'cie1', label: 'CIE-1', max: 50 },
@@ -98,6 +99,59 @@ export const TeacherMarks: React.FC = () => {
     if (value !== '' && (isNaN(num) || num < 0 || num > assessment.max)) return;
     setSaved(false);
     setMarks(prev => ({ ...prev, [roll]: value }));
+  };
+
+  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        if (!data) return;
+
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json<any>(sheet);
+
+        const newMarks = { ...marks };
+        let matchCount = 0;
+
+        rows.forEach((row) => {
+          const rollKey = Object.keys(row).find((k) =>
+            /^(roll|id|usn|student\s*id|roll\s*no|roll\s*number|rollno)$/i.test(k)
+          );
+          const scoreKey = Object.keys(row).find((k) =>
+            /^(mark|marks|score|cie|cie1|cie2|cie3|assignment|lab)$/i.test(k) ||
+            k.toLowerCase() === selectedAssessment.toLowerCase()
+          );
+
+          if (rollKey && scoreKey) {
+            const rollVal = String(row[rollKey]).trim().toUpperCase();
+            const scoreVal = String(row[scoreKey]).trim();
+            const scoreNum = parseFloat(scoreVal);
+
+            const studentExists = students.some((s) => s.roll === rollVal);
+            if (studentExists && !isNaN(scoreNum) && scoreNum >= 0 && scoreNum <= assessment.max) {
+              newMarks[rollVal] = String(scoreNum);
+              matchCount++;
+            }
+          }
+        });
+
+        setMarks(newMarks);
+        setSaved(false);
+        alert(`Successfully imported ${matchCount} student marks from Excel sheet!`);
+      } catch (err) {
+        console.error('Error parsing Excel file:', err);
+        alert('Failed to parse Excel file. Please ensure it has Roll No and Marks columns.');
+      }
+    };
+    reader.readAsBinaryString(file);
+    // Reset file input value to allow re-upload of same file
+    e.target.value = '';
   };
 
   const handleSave = async () => {
@@ -261,6 +315,16 @@ export const TeacherMarks: React.FC = () => {
           <Save size={16} />
           {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Marks'}
         </button>
+        <label className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm shadow-sm bg-amber-600 text-white hover:bg-amber-700 cursor-pointer transition-colors duration-150">
+          <Upload size={16} />
+          Upload Marks Excel
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleExcelUpload}
+            className="hidden"
+          />
+        </label>
         {saved && (
           <span className="text-sm text-green-700 font-medium flex items-start sm:items-center gap-1.5">
             <CheckCircle2 size={14} />

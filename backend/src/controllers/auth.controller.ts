@@ -4,6 +4,9 @@ import * as jwt from 'jsonwebtoken';
 import prisma from '../prisma/client';
 import { config } from '../config';
 import { AuthRequest } from '../types';
+import { parseExcel, parseWord, parsePDF, extractStudentsFromText } from '../utils/fileParser';
+import * as path from 'path';
+import * as fs from 'fs';
 
 export const login = async (req: Request, res: Response) => {
   const { id, password, role } = req.body;
@@ -140,6 +143,8 @@ export const getUsersByRole = async (req: AuthRequest, res: Response) => {
         role: true,
         department: true,
         classGroup: true,
+        semesterId: true,
+        semester: { select: { id: true, name: true } },
       },
       orderBy: {
         name: 'asc',
@@ -155,13 +160,15 @@ export const getUsersByRole = async (req: AuthRequest, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, password, role, department } = req.body;
+  const { name, password, role, department, classGroup, semesterId } = req.body;
 
   try {
     const data: any = {};
     if (name) data.name = name;
     if (role) data.role = role;
     if (department) data.department = department;
+    if (classGroup !== undefined) data.classGroup = classGroup;
+    if (semesterId !== undefined) data.semesterId = semesterId;
     if (password) {
       data.password = await bcrypt.hash(password, 12);
     }
@@ -178,6 +185,8 @@ export const updateUser = async (req: Request, res: Response) => {
         role: user.role,
         name: user.name,
         department: user.department,
+        classGroup: user.classGroup,
+        semesterId: user.semesterId,
       },
     });
   } catch (error: any) {
@@ -225,5 +234,181 @@ export const deleteUser = async (req: Request, res: Response) => {
       });
     }
     return res.status(500).json({ error: error.message || 'Internal server error during user deletion' });
+  }
+};
+
+export const uploadStudents = async (req: AuthRequest, res: Response) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const { semesterId, defaultDepartment, defaultClassGroup } = req.body;
+
+  if (!semesterId) {
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: 'semesterId is required' });
+  }
+
+  // Verify semester exists
+  const semester = await prisma.semester.findUnique({ where: { id: semesterId } });
+  if (!semester) {
+    fs.unlinkSync(req.file.path);
+    return res.status(404).json({ error: 'Semester not found' });
+  }
+
+  try {
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const defaultPassword = await bcrypt.hash('student123', 12);
+
+    let parsedStudents: { id: string; name: string; department: string; classGroup: string }[] = [];
+
+    if (ext === '.xlsx' || ext === '.xls') {
+      // Parse Excel file
+      const rows = parseExcel(fileBuffer);
+      parsedStudents = rows
+        .map((row: any) => ({
+          id: String(
+            row['Roll No'] ||
+            row['Roll Number'] ||
+            row['USN'] ||
+            row['ID'] ||
+            row['roll_no'] ||
+            row['roll'] ||
+            Object.values(row)[0] ||
+            ''
+          ).trim().toUpperCase(),
+          name: String(
+            row['Name'] ||
+            row['Student Name'] ||
+            row['Full Name'] ||
+            row['name'] ||
+            Object.values(row)[1] ||
+            ''
+          ).trim(),
+          department: String(
+            row['Department'] ||
+            row['Dept'] ||
+            row['Branch'] ||
+            row['department'] ||
+            defaultDepartment ||
+            'Computer Science & Engineering'
+          ).trim(),
+          classGroup: String(
+            row['Section'] ||
+            row['Class'] ||
+            row['Class Group'] ||
+            row['classGroup'] ||
+            row['section'] ||
+            defaultClassGroup ||
+            'CSE-B'
+          ).trim(),
+        }))
+        .filter((s: any) => s.id && s.name);
+    } else if (ext === '.docx' || ext === '.doc') {
+      // Parse Word file
+      const text = await parseWord(fileBuffer);
+      parsedStudents = extractStudentsFromText(text);
+      // Apply defaults where missing
+      parsedStudents = parsedStudents.map(s => ({
+        ...s,
+        department: s.department || defaultDepartment || 'Computer Science & Engineering',
+        classGroup: s.classGroup || defaultClassGroup || 'CSE-B',
+      }));
+    } else if (ext === '.pdf') {
+      // Parse PDF file
+      const text = await parsePDF(fileBuffer);
+      parsedStudents = extractStudentsFromText(text);
+      // Apply defaults where missing
+      parsedStudents = parsedStudents.map(s => ({
+        ...s,
+        department: s.department || defaultDepartment || 'Computer Science & Engineering',
+        classGroup: s.classGroup || defaultClassGroup || 'CSE-B',
+      }));
+    } else {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Unsupported file type. Please upload Excel (.xlsx/.xls), Word (.docx/.doc), or PDF (.pdf)' });
+    }
+
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+
+    if (parsedStudents.length === 0) {
+      return res.status(400).json({
+        error: 'No valid student records found in the uploaded file. Please check the file format.',
+      });
+    }
+
+    const results: { success: any[]; updated: any[]; skipped: any[]; errors: any[] } = {
+      success: [],
+      updated: [],
+      skipped: [],
+      errors: [],
+    };
+
+    for (const student of parsedStudents) {
+      if (!student.id || !student.name) {
+        results.errors.push({ ...student, reason: 'Missing ID or Name' });
+        continue;
+      }
+
+      try {
+        // Check if user already exists
+        const existing = await prisma.user.findUnique({ where: { id: student.id } });
+
+        if (existing) {
+          if (existing.role !== 'student') {
+            results.skipped.push({ ...student, reason: `User ${student.id} exists with role '${existing.role}' — skipped` });
+            continue;
+          }
+          // Update existing student's semester, section, department
+          await prisma.user.update({
+            where: { id: student.id },
+            data: {
+              semesterId,
+              classGroup: student.classGroup,
+              department: student.department,
+            },
+          });
+          results.updated.push({ id: student.id, name: student.name });
+        } else {
+          // Create new student
+          await prisma.user.create({
+            data: {
+              id: student.id,
+              name: student.name,
+              password: defaultPassword,
+              role: 'student',
+              department: student.department,
+              classGroup: student.classGroup,
+              semesterId,
+            },
+          });
+          results.success.push({ id: student.id, name: student.name });
+        }
+      } catch (err: any) {
+        results.errors.push({ ...student, reason: err.message || 'Unknown error' });
+      }
+    }
+
+    return res.status(200).json({
+      message: `Import complete: ${results.success.length} created, ${results.updated.length} updated, ${results.skipped.length} skipped, ${results.errors.length} errors.`,
+      summary: {
+        total: parsedStudents.length,
+        created: results.success.length,
+        updated: results.updated.length,
+        skipped: results.skipped.length,
+        errors: results.errors.length,
+      },
+      details: results,
+    });
+  } catch (error: any) {
+    console.error('Error processing student upload:', error);
+    // Clean up file if still there
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    return res.status(500).json({ error: error.message || 'Internal server error during student upload' });
   }
 };

@@ -33,15 +33,17 @@ model User {
   department  String
   classGroup  String?  // Section for students (e.g., "CSE-B"). Null for teachers.
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
   taughtSubjects    Subject[]          @relation("TeacherSubjects")
   attendanceRecords AttendanceRecord[]
   marks             Mark[]
   announcements     Announcement[]     @relation("UserAnnouncements")
   notes             Note[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  semesterId        String?
+  semester          Semester?          @relation(fields: [semesterId], references: [id])
 }
 
 model Subject {
@@ -75,6 +77,7 @@ model Semester {
   attendanceSessions AttendanceSession[]
   marks              Mark[]
   timetableSlots     TimetableSlot[]
+  students           User[]
 }
 
 model AttendanceSession {

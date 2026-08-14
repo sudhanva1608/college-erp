@@ -8,25 +8,23 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// File filter to accept only safe file types
+// File filter to accept safe file types including Word and PDF
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Allow only specific file extensions
-  const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|ppt|pptx|xls|xlsx/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  const allowedExtensions = /jpeg|jpg|png|gif|pdf|doc|docx|txt|ppt|pptx|xls|xlsx/;
+  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+  const extValid = allowedExtensions.test(ext);
 
-  if (extname && mimetype) {
+  // Accept by extension — mime types for docx/xlsx can vary by OS
+  if (extValid) {
     return cb(null, true);
   } else {
-    cb(new Error('Error: Only specific file types are allowed!'));
+    cb(new Error('Error: Only specific file types are allowed (Excel, Word, PDF, images)!'));
   }
 };
 
 // Sanitize filename to prevent path traversal
 const sanitizeFilename = (filename: string): string => {
-  // Remove path components and keep only the filename
   const name = filename.replace(/^.*[\\/]/, '');
-  // Remove dangerous characters
   return name.replace(/[^\w.\-]/g, '_');
 };
 
@@ -44,5 +42,5 @@ const storage = multer.diskStorage({
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
 });
