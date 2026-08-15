@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Upload, Search, Edit2, Trash2, CheckCircle2, AlertCircle, 
-  ChevronDown, HelpCircle, Loader2, X, Plus, ShieldCheck
+import {
+  Upload, Search, Edit2, Trash2, CheckCircle2, AlertCircle,
+  ChevronDown, HelpCircle, Loader2, X, Plus, ShieldCheck,
+  Download
 } from 'lucide-react';
 import API from '../../services/api';
 
@@ -59,6 +60,10 @@ export const StudentManagement: React.FC = () => {
   const [newStudent, setNewStudent] = useState<{ id: string; name: string; department: string; classGroup: string; semesterId: string } | null>(null);
   const [showFormModal, setShowFormModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  // Report type state
+  const [reportType, setReportType] = useState<'students' | 'faculty-marks'>('students');
+  // Export format state
+  const [exportFormat, setExportFormat] = useState<'csv' | 'excel' | 'pdf' | 'json'>('csv');
 
   // Fetch initial data
   const fetchData = async () => {
@@ -143,6 +148,113 @@ export const StudentManagement: React.FC = () => {
       showToast(errMsg, 'error');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const getFilteredStudents = (): StudentUser[] => {
+    return students.filter(s => {
+      const matchesSearch =
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.department.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesSemester =
+        filterSemester === 'all' ||
+        s.semesterId === filterSemester;
+
+      const matchesSection =
+        filterSection === 'all' ||
+        (s.classGroup && s.classGroup.toLowerCase() === filterSection.toLowerCase());
+
+      return matchesSearch && matchesSemester && matchesSection;
+    });
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      if (reportType === 'students') {
+        const filtered = getFilteredStudents();
+        if (filtered.length === 0) {
+          showToast('No students match the current filters to export.', 'error');
+          return;
+        }
+
+        // Call backend endpoint with format parameter and filters
+        const response = await API.get('/vip/students/report', {
+          params: {
+            search: searchQuery,
+            semesterId: filterSemester !== 'all' ? filterSemester : undefined,
+            classGroup: filterSection !== 'all' ? filterSection : undefined,
+            format: exportFormat
+          },
+          responseType: exportFormat === 'csv' || exportFormat === 'json' ? 'text' : 'blob'
+        });
+
+        // Handle different response types
+        let blob: Blob;
+        let filename: string;
+
+        if (exportFormat === 'csv') {
+          blob = new Blob([response.data], { type: 'text/csv' });
+          filename = `students-report${filterSemester !== 'all' ? `-${filterSemester}` : ''}${filterSection !== 'all' ? `-${filterSection}` : ''}${searchQuery ? `-search` : ''}.csv`;
+        } else if (exportFormat === 'json') {
+          blob = new Blob([response.data], { type: 'application/json' });
+          filename = `students-report${filterSemester !== 'all' ? `-${filterSemester}` : ''}${filterSection !== 'all' ? `-${filterSection}` : ''}${searchQuery ? `-search` : ''}.json`;
+        } else if (exportFormat === 'excel') {
+          blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          filename = `students-report${filterSemester !== 'all' ? `-${filterSemester}` : ''}${filterSection !== 'all' ? `-${filterSection}` : ''}${searchQuery ? `-search` : ''}.xlsx`;
+        } else if (exportFormat === 'pdf') {
+          blob = new Blob([response.data], { type: 'application/pdf' });
+          filename = `students-report${filterSemester !== 'all' ? `-${filterSemester}` : ''}${filterSection !== 'all' ? `-${filterSection}` : ''}${searchQuery ? `-search` : ''}.pdf`;
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else if (reportType === 'faculty-marks') {
+        // Fetch faculty-wise marks report from backend with format parameter
+        const response = await API.get('/vip/faculty-marks-report', {
+          params: { format: exportFormat },
+          responseType: exportFormat === 'csv' || exportFormat === 'json' ? 'text' : 'blob'
+        });
+
+        // Handle different response types
+        let blob: Blob;
+        let filename: string;
+
+        if (exportFormat === 'csv') {
+          blob = new Blob([response.data], { type: 'text/csv' });
+          filename = `faculty-marks-report.csv`;
+        } else if (exportFormat === 'json') {
+          blob = new Blob([response.data], { type: 'application/json' });
+          filename = `faculty-marks-report.json`;
+        } else if (exportFormat === 'excel') {
+          blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          filename = `faculty-marks-report.xlsx`;
+        } else if (exportFormat === 'pdf') {
+          blob = new Blob([response.data], { type: 'application/pdf' });
+          filename = `faculty-marks-report.pdf`;
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Error generating report:', err);
+      showToast('Failed to generate report.', 'error');
     }
   };
 
@@ -273,23 +385,55 @@ export const StudentManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Student Directory Management</h1>
           <p className="text-gray-500 text-sm mt-1">Enroll students semester-wise by uploading lists or manage individual accounts.</p>
         </div>
-        <button
-          onClick={() => {
-            setNewStudent({
-              id: '',
-              name: '',
-              department: defaultDepartment,
-              classGroup: defaultClassGroup,
-              semesterId: selectedSemester || (semesters[0]?.id || '')
-            });
-            setEditingStudent(null);
-            setShowFormModal(true);
-          }}
-          className="flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-colors duration-150 self-start sm:self-auto"
-        >
-          <Plus size={16} />
-          Add Single Student
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setNewStudent({
+                id: '',
+                name: '',
+                department: defaultDepartment,
+                classGroup: defaultClassGroup,
+                semesterId: selectedSemester || (semesters[0]?.id || '')
+              });
+              setEditingStudent(null);
+              setShowFormModal(true);
+            }}
+            className="flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-colors duration-150 self-start sm:self-auto"
+          >
+            <Plus size={16} />
+            Add Single Student
+          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:border-blue-500"
+            >
+              <option value="students">Student List</option>
+              <option value="faculty-marks">Faculty-wise Marks</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:border-blue-500"
+            >
+              <option value="csv">CSV</option>
+              <option value="excel">Excel</option>
+              <option value="pdf">PDF</option>
+              <option value="json">JSON</option>
+            </select>
+          </div>
+          <button
+            onClick={handleDownloadReport}
+            disabled={loading || uploading}
+            className="flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-colors duration-150 self-start sm:self-auto"
+          >
+            <Download size={16} />
+            Export Report
+          </button>
+        </div>
       </div>
 
       {/* Main Grid: Upload & Instructions */}

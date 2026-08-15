@@ -12,6 +12,7 @@ enum Role {
   teacher
   dean
   principal
+  hod
 }
 
 enum SemesterStatus {

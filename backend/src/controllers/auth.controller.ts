@@ -20,7 +20,7 @@ export const login = async (req: Request, res: Response) => {
     // Check if user exists and roles match
     // Use same error message regardless of whether user exists or password is wrong
     const roleMatches = role === 'supervisor'
-      ? user?.role === 'dean' || user?.role === 'principal'
+      ? user?.role === 'dean' || user?.role === 'principal' || user?.role === 'hod'
       : user?.role === role;
     if (!user || !roleMatches) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -123,7 +123,7 @@ export const getUsersByRole = async (req: AuthRequest, res: Response) => {
 
   // Handle comma-separated roles (e.g., "teacher,dean,principal")
   const roles = role.split(',').map(r => r.trim()).filter(r =>
-    ['student', 'teacher', 'dean', 'principal'].includes(r)
+    ['student', 'teacher', 'dean', 'principal', 'hod'].includes(r)
   );
 
   if (roles.length === 0) {
