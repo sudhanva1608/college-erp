@@ -16,6 +16,7 @@ import { SupervisorDashboard } from './components/supervisor/SupervisorDashboard
 import { SemesterManagement } from './components/supervisor/SemesterManagement';
 import { FacultyManagement } from './components/supervisor/FacultyManagement';
 import { TimetableManagement } from './components/supervisor/TimetableManagement';
+import { Leaderboard } from './components/supervisor/Leaderboard';
 
 
 // Auth context
@@ -71,7 +72,7 @@ export const App: React.FC = () => {
   };
 
   const SupervisorOnlyRoute = ({ children }: { children: React.ReactNode }) => {
-    if (!user || !(user.role === 'dean' || user.role === 'principal')) {
+    if (!user || !(user.role === 'dean' || user.role === 'principal' || user.role === 'hod')) {
       return <Navigate to="/login/supervisor" replace />;
     }
     return children;
@@ -119,6 +120,7 @@ export const App: React.FC = () => {
             <Route path="/supervisor/semesters" element={<SemesterManagement />} />
             <Route path="/supervisor/faculty" element={<FacultyManagement />} />
             <Route path="/supervisor/timetable" element={<TimetableManagement />} />
+            <Route path="/supervisor/leaderboard" element={<Leaderboard />} />
           </Route>
 
           {/* Catch-all redirect to login */}

@@ -7,6 +7,7 @@ import timetableRoutes from './timetable.routes';
 import noteRoutes from './note.routes';
 import semesterRoutes from './semester.routes';
 import subjectRoutes from './subject.routes';
+import vipRoutes from './vip.routes';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/timetable', timetableRoutes);
 router.use('/notes', noteRoutes);
 router.use('/semesters', semesterRoutes);
 router.use('/subjects', subjectRoutes);
+router.use('/vip', vipRoutes);
 
 export default router;

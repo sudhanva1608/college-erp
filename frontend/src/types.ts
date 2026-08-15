@@ -1,4 +1,4 @@
-export type Role = 'student' | 'teacher' | 'dean' | 'principal';
+export type Role = 'student' | 'teacher' | 'dean' | 'principal' | 'hod';
 export type SignInRole = 'student' | 'teacher' | 'supervisor';
 
 export interface User {

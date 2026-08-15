@@ -56,7 +56,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, defaultRole }) => {
       onLogin(loggedInUser);
 
       // Redirect based on role
-      if (loggedInUser.role === 'dean' || loggedInUser.role === 'principal') {
+      if (loggedInUser.role === 'dean' || loggedInUser.role === 'principal' || loggedInUser.role === 'hod') {
         navigate(`/supervisor/dashboard`, { replace: true });
       } else {
         navigate(`/${loggedInUser.role}/dashboard`, { replace: true });
@@ -102,7 +102,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, defaultRole }) => {
           <p className="text-white/30 text-xs mt-1.5">
             Developed by{' '}
             <a
-              href="https://github.com/Nerdtrovert"
+              href="https://prajwalnavada.is-a.dev/"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white underline transition-colors"
@@ -168,7 +168,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, defaultRole }) => {
                   type="text"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
-                  placeholder={role === 'student' ? 'e.g. CS21B042' : role === 'teacher' ? 'e.g. FAC2018' : 'e.g. DEAN123 or PRINCIPAL456'}
+                  placeholder={role === 'student' ? 'e.g. CS21B042' : role === 'teacher' ? 'e.g. FAC2018' : 'e.g. DEAN123, PRINCIPAL456, or HOD2020'}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-gray-50"
                   required
                 />
@@ -230,7 +230,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, defaultRole }) => {
             <p className="mt-1.5 text-white/40">
               Developed by{' '}
               <a
-                href="https://github.com/Nerdtrovert"
+                href="https://prajwalnavada.is-a.dev/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-white transition-colors"
